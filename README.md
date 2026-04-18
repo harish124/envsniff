@@ -11,6 +11,8 @@
 
 No more "what env vars do I need to run this?" — `envsniff` finds them all and documents them for you.
 
+![envsniff usage demo](assets/envsniff-usage.gif)
+
 ---
 
 ## Table of Contents
