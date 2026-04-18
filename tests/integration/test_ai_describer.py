@@ -269,18 +269,16 @@ class TestAIDescriberProviders:
 
     def test_gemini_provider_uses_generative_model(self, tmp_path: Path) -> None:
         findings = [make_finding("DB_URL")]
-        mock_genai = MagicMock()
-        mock_model = MagicMock()
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.text = _make_mock_response(findings)
-        mock_model.generate_content.return_value = mock_response
-        mock_genai.GenerativeModel.return_value = mock_model
+        mock_client.models.generate_content.return_value = mock_response
 
-        with patch("envsniff.describer.ai._create_client", return_value=mock_genai):
+        with patch("envsniff.describer.ai._create_client", return_value=mock_client):
             from envsniff.describer.ai import describe_batch
             result = describe_batch(findings, cache_path=tmp_path / "cache.json", provider="gemini")
 
-        assert mock_genai.GenerativeModel.call_count == 1
+        assert mock_client.models.generate_content.call_count == 1
         assert "DB_URL" in result
 
     def test_unknown_provider_falls_back(self, tmp_path: Path) -> None:

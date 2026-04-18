@@ -62,9 +62,8 @@ def _create_client(provider: str) -> object:
     if provider == "gemini":
         import os
 
-        import google.generativeai as genai  # lazy import
-        genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))  # type: ignore[attr-defined]
-        return genai
+        from google import genai  # lazy import  # type: ignore[attr-defined]
+        return genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
     if provider == "ollama":
         import openai  # lazy import — Ollama exposes an OpenAI-compatible API
@@ -95,8 +94,10 @@ def _call_provider(client: object, provider: str, model: str, prompt: str) -> st
         return response.choices[0].message.content or ""
 
     if provider == "gemini":
-        model_obj = client.GenerativeModel(model)  # type: ignore[attr-defined]
-        response = model_obj.generate_content(prompt)
+        response = client.models.generate_content(  # type: ignore[attr-defined]
+            model=model,
+            contents=prompt,
+        )
         return response.text  # type: ignore[no-any-return]
 
     raise ValueError(f"Unknown provider: {provider!r}")
