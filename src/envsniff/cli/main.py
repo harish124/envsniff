@@ -186,14 +186,27 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
     # Merge
     merged = merge_findings(list(result.findings), existing_entries)
 
-    # Build descriptions for NEW entries — always use fallback heuristics,
-    # override with AI when --ai is requested.
+    # Build descriptions — always use fallback heuristics, override with AI
+    # when --ai is requested.  Describes both NEW entries and EXISTING entries
+    # that have no real description yet (only "# Added by envsniff" or empty).
     from envsniff.describer.fallback import describe_var as fallback_describe
+
     existing_keys = {e.key for e in existing_entries}
     new_findings = [f for f in result.findings if f.name not in existing_keys]
 
+    # EXISTING entries whose comments contain no real description
+    undescribed_existing = {
+        e.key for e in existing_entries
+        if not e.comments or all(
+            c.strip() in ("# Added by envsniff", "#", "")
+            for c in e.comments
+        )
+    }
+    undescribed_findings = [f for f in result.findings if f.name in undescribed_existing]
+
+    findings_to_describe = new_findings + undescribed_findings
     descriptions: dict[str, tuple[str, str]] = {
-        f.name: fallback_describe(f.name) for f in new_findings
+        f.name: fallback_describe(f.name) for f in findings_to_describe
     }
 
     use_ai = ai or config.ai
@@ -202,8 +215,13 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
         provider, model = _prompt_ai_settings(
             ai_provider, ai_model, config.ai_provider, config.ai_model
         )
-        ai_descriptions = describe_batch(new_findings, provider=provider, model=model)
+        ai_descriptions = describe_batch(findings_to_describe, provider=provider, model=model)
         descriptions.update(ai_descriptions)
+
+    def _needs_description(entry: MergedEntry) -> bool:
+        return entry.key in descriptions and (
+            entry.status == MergeStatus.NEW or entry.key in undescribed_existing
+        )
 
     merged = [
         MergedEntry(
@@ -216,7 +234,7 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
                 f"# Example:     {descriptions[entry.key][1]}",
                 "#",
             )
-            if entry.status == MergeStatus.NEW and entry.key in descriptions
+            if _needs_description(entry)
             else entry.comments,
             inline_comment=entry.inline_comment,
             blank_line_before=entry.blank_line_before,
