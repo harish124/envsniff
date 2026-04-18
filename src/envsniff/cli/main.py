@@ -209,7 +209,13 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
         MergedEntry(
             key=entry.key,
             value=entry.value,
-            comments=(f"# {descriptions[entry.key][0]}", f"# Example: {descriptions[entry.key][1]}")
+            comments=(
+                "# Added by envsniff",
+                "#",
+                f"# Description: {descriptions[entry.key][0]}",
+                f"# Example:     {descriptions[entry.key][1]}",
+                "#",
+            )
             if entry.status == MergeStatus.NEW and entry.key in descriptions
             else entry.comments,
             inline_comment=entry.inline_comment,
