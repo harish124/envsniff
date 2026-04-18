@@ -55,7 +55,7 @@ flowchart TD
     C --> D1[Python plugin\nos.getenv / os.environ]
     C --> D2[JavaScript plugin\nprocess.env.X]
     C --> D3[Go plugin\nos.Getenv]
-    C --> D4[Shell plugin\n$VAR / ${VAR}]
+    C --> D4[Shell plugin\n$VAR / $VARNAME]
     C --> D5[Docker plugin\nENV / ARG]
     D1 & D2 & D3 & D4 & D5 --> E[Scanner Engine\ndeduplication + type inference]
     E --> F{Command}
