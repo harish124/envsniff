@@ -1,6 +1,11 @@
 # envsniff
 
-> Scan codebases for environment variables, detect undocumented vars, and generate `.env.example` files with AI-written descriptions.
+[![Stars](https://img.shields.io/github/stars/harish124/envsniff?style=flat-square&logo=github)](https://github.com/harish124/envsniff/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/harish124/envsniff?style=flat-square&logo=github)](https://github.com/harish124/envsniff/commits/main)
+[![License](https://img.shields.io/github/license/harish124/envsniff?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+
+> Scan codebases for environment variables, detect undocumented vars, and generate `.env.example` files — with or without AI-written descriptions.
 
 No more "what env vars do I need to run this?" — `envsniff` finds them all and documents them for you.
 
@@ -16,6 +21,7 @@ No more "what env vars do I need to run this?" — `envsniff` finds them all and
   - [generate](#generate)
   - [check](#check)
 - [Supported languages](#supported-languages)
+- [Technologies](#technologies)
 - [AI descriptions](#ai-descriptions)
 - [Pre-commit hook](#pre-commit-hook)
 - [CI integration](#ci-integration)
@@ -29,12 +35,12 @@ No more "what env vars do I need to run this?" — `envsniff` finds them all and
 
 Most teams document environment variables manually — and it's always out of date. `envsniff` fixes this by reading the code directly.
 
-| Tool | Gap |
-|------|-----|
-| `dotenv-linter` | Lints `.env` files only — does not scan source code |
-| `sync-dotenv` | Syncs `.env` → `.env.example`, requires an existing `.env` |
-| `detect-secrets` | Security-focused; finds secrets, not documentation |
-| `env-checker` | Runtime validation, not a scanner |
+| Tool             | Gap                                                        |
+| ---------------- | ---------------------------------------------------------- |
+| `dotenv-linter`  | Lints `.env` files only — does not scan source code        |
+| `sync-dotenv`    | Syncs `.env` → `.env.example`, requires an existing `.env` |
+| `detect-secrets` | Security-focused; finds secrets, not documentation         |
+| `env-checker`    | Runtime validation, not a scanner                          |
 
 **envsniff** is the only tool that scans your source code, finds every `os.getenv()` / `process.env.X` / `os.Getenv()` call, and generates a documented `.env.example` from scratch.
 
@@ -56,7 +62,7 @@ flowchart TD
     F -->|scan| G[Formatted output\ntable / json / markdown]
     F -->|generate| H[.env.example Parser]
     H --> I[Merger\nnew / stale / existing]
-    I --> J[AI Describer\nClaude API]
+    I --> J[AI Describer\noptional]
     J --> K[Atomic Writer\n.env.example]
     F -->|check| L{All vars documented?}
     L -->|yes| M[exit 0 ✓]
@@ -67,23 +73,49 @@ flowchart TD
 
 When running `envsniff generate`, existing human-written comments are always preserved:
 
-| Var state | Action |
-|-----------|--------|
-| In code + in `.env.example` | Keep as-is (preserve human description) |
-| In code, missing from `.env.example` | Add with `# Added by envsniff` |
-| In `.env.example`, not in code | Comment out with `# UNUSED (not found in codebase):` |
+| Var state                            | Action                                               |
+| ------------------------------------ | ---------------------------------------------------- |
+| In code + in `.env.example`          | Keep as-is (preserve human description)              |
+| In code, missing from `.env.example` | Add with `# Added by envsniff`                       |
+| In `.env.example`, not in code       | Comment out with `# UNUSED (not found in codebase):` |
 
 ---
 
 ## Install
 
-```bash
-# PyPI
-pip install envsniff
+### macOS / Linux
 
-# Via npm / npx
+```bash
+pip install envsniff
+```
+
+### Windows
+
+```cmd
+pip install envsniff
+```
+
+### Via npm / npx (any OS)
+
+```bash
 npx envsniff scan .
 ```
+
+### Local development (after cloning)
+
+```bash
+# macOS / Linux
+git clone https://github.com/harish124/envsniff.git
+cd envsniff
+pip install -e .
+
+# Windows
+git clone https://github.com/harish124/envsniff.git
+cd envsniff
+pip install -e .
+```
+
+The `-e` flag installs in editable mode — changes to the source take effect immediately without reinstalling.
 
 ---
 
@@ -121,8 +153,9 @@ Create or update `.env.example`:
 ```bash
 envsniff generate .
 envsniff generate . --output .env.example
-envsniff generate . --ai          # use Claude to write descriptions
+envsniff generate . --ai          # prompts for provider + model interactively
 envsniff generate . --no-ai       # skip AI, use heuristic descriptions
+envsniff generate . --ai --ai-provider openai --ai-model gpt-4o   # non-interactive
 ```
 
 Example `.env.example` output:
@@ -158,45 +191,83 @@ envsniff check . --strict         # fail on any issue
 
 ## Supported languages
 
-| Language | Patterns detected |
-|----------|------------------|
-| Python | `os.getenv("X")`, `os.environ.get("X")`, `os.environ["X"]` |
-| JavaScript / TypeScript | `process.env.X`, `process.env["X"]` |
-| Go | `os.Getenv("X")`, `os.LookupEnv("X")` |
-| Shell | `$VAR`, `${VAR}` (skips `$$`, `$?`, `$1`–`$9`) |
-| Dockerfile | `ENV VAR=value`, `ARG VAR=default` |
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Go](https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&logoColor=white)
+![Shell](https://img.shields.io/badge/Shell-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+
+| Language                | Patterns detected                                          |
+| ----------------------- | ---------------------------------------------------------- |
+| Python                  | `os.getenv("X")`, `os.environ.get("X")`, `os.environ["X"]` |
+| JavaScript / TypeScript | `process.env.X`, `process.env["X"]`                        |
+| Go                      | `os.Getenv("X")`, `os.LookupEnv("X")`                      |
+| Shell                   | `$VAR`, `${VAR}` (skips `$$`, `$?`, `$1`–`$9`)             |
+| Dockerfile              | `ENV VAR=value`, `ARG VAR=default`                         |
+
+---
+
+## Technologies
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Click](https://img.shields.io/badge/Click-000000?style=flat-square&logo=python&logoColor=white)
+![tree--sitter](https://img.shields.io/badge/tree--sitter-lightgrey?style=flat-square)
+![Anthropic](https://img.shields.io/badge/Anthropic-Claude-black?style=flat-square)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-4285F4?style=flat-square&logo=google&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-local-darkgreen?style=flat-square)
+
+| Library                                                                      | Purpose                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [Click](https://click.palletsprojects.com)                                   | CLI framework                                          |
+| [tree-sitter](https://tree-sitter.github.io)                                 | AST-based source code parsing per language             |
+| [questionary](https://github.com/tmbo/questionary)                           | Interactive terminal prompts with arrow-key navigation |
+| [pathspec](https://github.com/cpburnz/python-pathspec)                       | `.gitignore`-aware file walking                        |
+| [anthropic](https://github.com/anthropics/anthropic-sdk-python)              | Anthropic Claude AI descriptions                       |
+| [openai](https://github.com/openai/openai-python)                            | OpenAI / Grok / Perplexity AI descriptions             |
+| [google-generativeai](https://github.com/google-gemini/generative-ai-python) | Google Gemini AI descriptions                          |
+| [ollama](https://github.com/ollama/ollama-python)                            | Local Ollama AI descriptions                           |
 
 ---
 
 ## AI descriptions
 
-All AI providers are bundled with envsniff. Set the relevant API key and pass `--ai`:
+All AI providers are bundled with envsniff — no extra install step. Pass `--ai` and you will be prompted to choose a provider and model interactively:
 
-```bash
-# Anthropic Claude (default)
-export ANTHROPIC_API_KEY=sk-ant-...
-envsniff generate . --ai
+```
+$ envsniff generate . --ai
 
-# OpenAI
-export OPENAI_API_KEY=sk-...
-envsniff generate . --ai --ai-provider openai
+? Which AI provider?
+  1. Anthropic (Claude)
+❯ 2. OpenAI (GPT)
+  3. Google Gemini
+  4. Ollama (local)
 
-# Google Gemini
-export GEMINI_API_KEY=...
-envsniff generate . --ai --ai-provider gemini
-
-# Ollama (local, no API key needed)
-envsniff generate . --ai --ai-provider ollama
-
-# Grok / Perplexity (OpenAI-compatible)
-export OPENAI_BASE_URL=https://api.x.ai/v1
-export OPENAI_API_KEY=...
-envsniff generate . --ai --ai-provider openai --ai-model grok-beta
+  Tip: check the official openai documentation for available models.
+? Which model? (e.g. gpt-4o-mini): gpt-4o
 ```
 
+Use arrow keys to select a provider, Enter to confirm. Model name is required — leaving it blank will error.
+
+Or skip the prompts by passing flags directly (useful for CI):
+
+```bash
+envsniff generate . --ai --ai-provider openai --ai-model gpt-4o
+```
+
+Set the API key for your chosen provider before running:
+
+| Provider  | API key env var     | Notes                                                 |
+| --------- | ------------------- | ----------------------------------------------------- |
+| Anthropic | `ANTHROPIC_API_KEY` | Default provider                                      |
+| OpenAI    | `OPENAI_API_KEY`    | Also works for Grok, Perplexity via `OPENAI_BASE_URL` |
+| Gemini    | `GEMINI_API_KEY`    |                                                       |
+| Ollama    | —                   | Local, no key needed                                  |
+
 - Batches up to 20 vars per API call
-- Caches results in `~/.cache/envsniff/descriptions.json` (won't call the API twice for the same var)
-- Falls back to heuristic descriptions if the API is unavailable
+- Caches results in `~/.cache/envsniff/descriptions.json` — API is never called twice for the same var
+- Falls back to heuristic descriptions if the provider is unavailable
 
 ---
 
@@ -206,7 +277,7 @@ Add to `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: https://github.com/envsniff/envsniff
+  - repo: https://github.com/harish124/envsniff
     rev: v0.1.0
     hooks:
       - id: envsniff-check
@@ -248,6 +319,8 @@ Create `.envsniff.toml` in your project root (or add `[tool.envsniff]` to `pypro
 exclude = ["tests/*", "scripts/*", "*.sh"]
 output = ".env.example"
 ai = false
+ai_provider = "anthropic"   # anthropic | openai | gemini | ollama
+ai_model = ""               # leave empty to be prompted, or set a specific model
 ```
 
 ---
@@ -257,6 +330,7 @@ ai = false
 `scan` and `check` support `--format table` (default), `--format json`, and `--format md`.
 
 **JSON** — for scripting and CI:
+
 ```
 findings[1]:
   - name: DATABASE_URL
@@ -271,11 +345,12 @@ errors[0]:
 ```
 
 **Markdown** — for documentation:
+
 ```markdown
-| Name | Type | Required | Default |
-|------|------|----------|---------|
-| DATABASE_URL | URL | yes | — |
-| DEBUG | BOOLEAN | no | false |
+| Name         | Type    | Required | Default |
+| ------------ | ------- | -------- | ------- |
+| DATABASE_URL | URL     | yes      | —       |
+| DEBUG        | BOOLEAN | no       | false   |
 ```
 
 ---
@@ -301,7 +376,7 @@ src/envsniff/
 │   ├── types.py        # Name → InferredType rules
 │   ├── fallback.py     # Heuristic descriptions (no API needed)
 │   ├── cache.py        # SHA-256 keyed JSON cache
-│   └── ai.py           # Claude API batched descriptions
+│   └── ai.py           # Multi-provider AI descriptions (Anthropic, OpenAI, Gemini, Ollama)
 ├── hooks/
 │   ├── precommit.py    # Staged-files-only scan
 │   └── ci.py           # Full scan with JSON output

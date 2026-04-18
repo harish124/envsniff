@@ -42,28 +42,41 @@ def _prompt_ai_settings(
     Returns resolved (provider, model) — model may be None (use provider default).
     Skips prompts and falls back to config/defaults when stdin is not a tty.
     """
+    import questionary
+
     interactive = sys.stdin.isatty()
 
     # --- Provider ---
     resolved_provider = provider or config_provider
     if provider is None and interactive:
-        resolved_provider = click.prompt(
+        chosen = questionary.select(
             "Which AI provider?",
-            type=click.Choice(["anthropic", "openai", "gemini", "ollama"]),
-            default=config_provider,
-        )
+            choices=[
+                questionary.Choice("1. Anthropic (Claude)", value="anthropic"),
+                questionary.Choice("2. OpenAI (GPT)", value="openai"),
+                questionary.Choice("3. Google Gemini", value="gemini"),
+                questionary.Choice("4. Ollama (local)", value="ollama"),
+            ],
+            default="anthropic",
+        ).ask()
+        if chosen is None:
+            raise click.Abort()
+        resolved_provider = chosen
 
     # --- Model ---
     resolved_model: str | None = model or config_model
     if model is None and interactive:
         example = _PROVIDER_EXAMPLES.get(resolved_provider, "")
         click.echo(f"  Tip: check the official {resolved_provider} documentation for available models.")
-        raw = click.prompt(
-            f"Which model? (e.g. {example})",
-            default="",
-            show_default=False,
-        ).strip()
-        resolved_model = raw if raw else None
+        raw = questionary.text(
+            "Which model?",
+            instruction=f"(e.g. {example})",
+        ).ask()
+        if raw is None:
+            raise click.Abort()
+        if not raw.strip():
+            raise click.UsageError("Model name is required. Check your provider's documentation for available models.")
+        resolved_model = raw.strip()
 
     return resolved_provider, resolved_model
 
