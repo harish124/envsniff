@@ -1,5 +1,7 @@
 # envsniff
 
+![envsniff](assets/envsniff-ascii.png)
+
 [![Stars](https://img.shields.io/github/stars/harish124/envsniff?style=flat-square&logo=github)](https://github.com/harish124/envsniff/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/harish124/envsniff?style=flat-square&logo=github)](https://github.com/harish124/envsniff/commits/main)
 [![License](https://img.shields.io/github/license/harish124/envsniff?style=flat-square)](LICENSE)
