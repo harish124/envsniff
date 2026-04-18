@@ -7,7 +7,6 @@ Thank you for taking the time to contribute! This document covers everything you
 - [Code of Conduct](#code-of-conduct)
 - [How to Contribute](#how-to-contribute)
 - [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
 - [Running Tests](#running-tests)
 - [Code Style](#code-style)
 - [Adding a Language Plugin](#adding-a-language-plugin)
@@ -47,7 +46,7 @@ Be respectful and constructive. We welcome contributors of all experience levels
 
 ```bash
 # Clone your fork
-git clone https://github.com/<your-username>/envsniff.git
+git clone https://github.com/harish124/envsniff.git
 cd envsniff
 
 # Install all dependencies (including dev)
@@ -57,37 +56,6 @@ poetry install
 poetry run pytest
 poetry run ruff check src/
 poetry run mypy src/
-```
-
----
-
-## Project Structure
-
-```
-src/envsniff/
-├── cli/
-│   ├── main.py          # Click commands: scan / generate / check
-│   ├── formatters.py    # table / json / markdown output renderers
-│   └── welcome.py       # First-run banner
-├── scanner/
-│   ├── engine.py        # Orchestrates walk → dispatch → deduplicate
-│   ├── file_walker.py   # .gitignore-aware recursive file walk
-│   ├── registry.py      # Maps file extensions/names to plugins
-│   └── plugins/         # One file per supported language
-├── env_example/
-│   ├── parser.py        # Reads existing .env.example
-│   ├── merger.py        # Classifies vars as new / existing / stale
-│   └── writer.py        # Atomic write (temp file → rename)
-├── describer/
-│   ├── ai.py            # Multi-provider AI descriptions
-│   ├── fallback.py      # Heuristic descriptions (no API needed)
-│   └── cache.py         # SHA-256 keyed JSON cache
-├── hooks/
-│   ├── precommit.py     # Staged-files-only scan
-│   └── ci.py            # Full scan with JSON output
-├── models.py            # Immutable dataclasses
-├── config.py            # .envsniff.toml / pyproject.toml loader
-└── errors.py            # Exception hierarchy
 ```
 
 ---
@@ -127,6 +95,7 @@ poetry run mypy src/
 All three must pass before opening a PR. The CI pipeline enforces this.
 
 **Key conventions:**
+
 - All type annotations required (mypy strict)
 - Imports sorted by ruff (`I` rules)
 - Use `TYPE_CHECKING` blocks for annotation-only imports
@@ -180,7 +149,7 @@ The easiest way to contribute is adding support for a new language. Each plugin 
 ## Submitting a Pull Request
 
 - Keep PRs focused — one feature or fix per PR
-- Write a clear PR description explaining the *why*, not just the *what*
+- Write a clear PR description explaining the _why_, not just the _what_
 - Ensure all CI checks pass (tests, ruff, mypy)
 - Add or update tests for any changed behaviour
 - Update `README.md` if you're adding user-facing functionality
