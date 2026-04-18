@@ -19,11 +19,12 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def run_ci_check(repo_root: Path, output_format: str = "json") -> int:
-    """Run a full repository scan and emit machine-readable output to stdout.
+def run_ci_check(repo_root: Path, output_format: str = "json") -> tuple[int, str]:
+    """Run a full repository scan and return the exit code and JSON output string.
 
-    Performs the equivalent of ``envsniff check`` but outputs structured JSON
-    to stdout so that CI log parsers can consume it directly.
+    Performs the equivalent of ``envsniff check`` but builds structured JSON
+    output so that CI log parsers can consume it directly.  The caller is
+    responsible for printing the returned string to stdout.
 
     JSON schema::
 
@@ -38,8 +39,9 @@ def run_ci_check(repo_root: Path, output_format: str = "json") -> int:
                        is supported.
 
     Returns:
-        0 — all variables are documented (status: "pass").
-        1 — one or more undocumented variables found (status: "fail").
+        A tuple of ``(exit_code, json_string)`` where:
+        - ``exit_code`` is 0 when all variables are documented, 1 otherwise.
+        - ``json_string`` is the serialised JSON output ready to print to stdout.
     """
     config = load_config(repo_root)
     env_example_path = repo_root / config.output
@@ -68,6 +70,5 @@ def run_ci_check(repo_root: Path, output_format: str = "json") -> int:
         "scanned_files": result.scanned_files,
     }
 
-    print(json.dumps(output))
-
-    return 1 if new_vars else 0
+    exit_code = 1 if new_vars else 0
+    return exit_code, json.dumps(output)

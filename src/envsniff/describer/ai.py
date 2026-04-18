@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from envsniff.describer.cache import DescriptionCache, make_cache_key
 from envsniff.describer.fallback import describe_var as fallback_describe
@@ -41,7 +42,7 @@ _PROVIDER_DEFAULTS: dict[str, str] = {
 _DEFAULT_CACHE_PATH = Path.home() / ".cache" / "envsniff" / "descriptions.json"
 
 
-def _create_client(provider: str) -> object:
+def _create_client(provider: str) -> Any:
     """Create and return a client for *provider*.
 
     Args:
@@ -63,7 +64,13 @@ def _create_client(provider: str) -> object:
         import os
 
         from google import genai  # lazy import  # type: ignore[attr-defined]
-        return genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "GEMINI_API_KEY environment variable is not set. "
+                "Set it before using the gemini provider."
+            )
+        return genai.Client(api_key=api_key)
 
     if provider == "ollama":
         import openai  # lazy import — Ollama exposes an OpenAI-compatible API
@@ -75,10 +82,10 @@ def _create_client(provider: str) -> object:
     )
 
 
-def _call_provider(client: object, provider: str, model: str, prompt: str) -> str:
+def _call_provider(client: Any, provider: str, model: str, prompt: str) -> str:
     """Send *prompt* to the provider and return the response text."""
     if provider == "anthropic":
-        response = client.messages.create(  # type: ignore[attr-defined]
+        response = client.messages.create(
             model=model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
@@ -86,7 +93,7 @@ def _call_provider(client: object, provider: str, model: str, prompt: str) -> st
         return response.content[0].text  # type: ignore[no-any-return]
 
     if provider in ("openai", "ollama"):
-        response = client.chat.completions.create(  # type: ignore[attr-defined]
+        response = client.chat.completions.create(
             model=model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
@@ -94,7 +101,7 @@ def _call_provider(client: object, provider: str, model: str, prompt: str) -> st
         return response.choices[0].message.content or ""
 
     if provider == "gemini":
-        response = client.models.generate_content(  # type: ignore[attr-defined]
+        response = client.models.generate_content(
             model=model,
             contents=prompt,
         )
@@ -124,8 +131,6 @@ def _scrub_snippet(snippet: str) -> str:
         os.environ.get("KEY", f"prefix-{host}")   ← f-string / expression
         os.environ.get("KEY", DEFAULT_VAR)         ← variable default (not sensitive)
     """
-    import re
-
     # Strip ", 'value'" or ', "value"' style default string literals
     return re.sub(r',\s*(["\']).*?\1(?=\s*\))', "", snippet)
 
@@ -156,7 +161,6 @@ def _parse_response(text: str, findings: list[EnvVarFinding]) -> dict[str, tuple
     try:
         data = json.loads(text.strip())
     except json.JSONDecodeError:
-        import re
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
             try:
@@ -225,7 +229,7 @@ def describe_batch(
     try:
         client = _create_client(provider)
         _describe_with_api(client, uncached, result, cache, provider, resolved_model)
-    except (ImportError, Exception) as exc:
+    except Exception as exc:
         logger.debug("AI describer unavailable (%s); using fallback heuristics.", exc)
         for finding in uncached:
             if finding.name not in result:
@@ -235,7 +239,7 @@ def describe_batch(
 
 
 def _describe_with_api(
-    client: object,
+    client: Any,
     findings: list[EnvVarFinding],
     result: dict[str, tuple[str, str]],
     cache: DescriptionCache,

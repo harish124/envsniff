@@ -71,6 +71,49 @@ class ScanEngine:
             errors=tuple(errors),
         )
 
+    def scan_files(self, files: list[Path], repo_root: Path) -> ScanResult:
+        """Scan a specific list of files and return aggregated results.
+
+        Resolves each path relative to *repo_root* (if not absolute) and
+        delegates to the appropriate plugin.
+
+        Args:
+            files:     List of file paths to scan (absolute or relative to repo_root).
+            repo_root: Used to resolve relative paths.
+
+        Returns:
+            ScanResult with all findings, file count, and any errors encountered.
+        """
+        global_map: dict[str, EnvVarFinding] = {}
+        errors: list[str] = []
+        scanned_files = 0
+
+        for file_path in files:
+            absolute = file_path if file_path.is_absolute() else repo_root / file_path
+
+            if not absolute.exists():
+                continue
+
+            plugin = self._registry.get_plugin(absolute)
+            if plugin is None:
+                continue
+
+            scanned_files += 1
+            try:
+                findings = plugin.scan(absolute)
+            except Exception as exc:
+                errors.append(f"Error scanning {absolute}: {exc}")
+                continue
+
+            for finding in findings:
+                self._merge_finding(global_map, finding)
+
+        return ScanResult(
+            findings=tuple(global_map.values()),
+            scanned_files=scanned_files,
+            errors=tuple(errors),
+        )
+
     def _merge_finding(
         self, global_map: dict[str, EnvVarFinding], finding: EnvVarFinding
     ) -> None:

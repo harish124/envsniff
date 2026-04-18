@@ -11,11 +11,11 @@ from envsniff.scanner.type_inferrer import infer_type
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Matches: ENV VAR_NAME=value  or  ENV VAR_NAME value  (uppercase only)
-_ENV_RE = re.compile(r"^ENV\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?", re.MULTILINE)
+# Matches: ENV VAR_NAME=value  or  ENV VAR_NAME value  (uppercase only, single-line)
+_ENV_LINE_RE = re.compile(r"^ENV\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?(?:\s+(.*))?$")
 
-# Matches: ARG VAR_NAME  or  ARG VAR_NAME=default  (uppercase only)
-_ARG_RE = re.compile(r"^ARG\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?", re.MULTILINE)
+# Matches: ARG VAR_NAME  or  ARG VAR_NAME=default  (uppercase only, single-line)
+_ARG_LINE_RE = re.compile(r"^ARG\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?$")
 
 # Supported Dockerfile filenames (base names, no extension matching)
 _SUPPORTED_FILENAMES = frozenset({
@@ -86,7 +86,7 @@ class DockerPlugin:
             stripped = line.strip()
 
             # Check ENV pattern
-            env_match = re.match(r"^ENV\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?(?:\s+(.*))?$", stripped)
+            env_match = _ENV_LINE_RE.match(stripped)
             if env_match:
                 name = env_match.group(1)
                 default_raw = env_match.group(2) or env_match.group(3)
@@ -100,7 +100,7 @@ class DockerPlugin:
                 continue
 
             # Check ARG pattern
-            arg_match = re.match(r"^ARG\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?$", stripped)
+            arg_match = _ARG_LINE_RE.match(stripped)
             if arg_match:
                 name = arg_match.group(1)
                 default_raw = arg_match.group(2)

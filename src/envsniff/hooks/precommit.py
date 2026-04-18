@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from envsniff.config import load_config
 from envsniff.env_example.merger import MergeStatus, merge_findings
@@ -17,9 +16,6 @@ from envsniff.env_example.parser import parse_env_example
 from envsniff.errors import ParseError
 from envsniff.scanner.engine import ScanEngine
 from envsniff.scanner.registry import PluginRegistry
-
-if TYPE_CHECKING:
-    from envsniff.models import ScanResult
 
 
 def get_staged_files() -> list[Path]:
@@ -75,7 +71,7 @@ def run_precommit_check(repo_root: Path) -> int:
     if staged:
         # Scan only the staged files that exist and have a recognised plugin
         engine = ScanEngine(registry=registry)
-        result = _scan_file_list(engine, staged, repo_root)
+        result = engine.scan_files(staged, repo_root)
     else:
         # Fallback: full repo scan (git not available or nothing staged)
         engine = ScanEngine(exclude=list(config.exclude), registry=registry)
@@ -93,48 +89,3 @@ def run_precommit_check(repo_root: Path) -> int:
     new_vars = [e for e in merged if e.status == MergeStatus.NEW]
 
     return 1 if new_vars else 0
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-
-def _scan_file_list(engine: ScanEngine, files: list[Path], repo_root: Path) -> ScanResult:
-    """Scan a specific list of files using the engine's registry.
-
-    Resolves each path relative to *repo_root* (if not absolute) and delegates
-    to the appropriate plugin.  Returns a combined :class:`ScanResult`.
-    """
-    from envsniff.models import EnvVarFinding, ScanResult
-
-    global_map: dict[str, EnvVarFinding] = {}
-    errors: list[str] = []
-    scanned_files = 0
-
-    for file_path in files:
-        # Resolve to an absolute path
-        absolute = file_path if file_path.is_absolute() else repo_root / file_path
-
-        if not absolute.exists():
-            continue
-
-        plugin = engine._registry.get_plugin(absolute)
-        if plugin is None:
-            continue
-
-        scanned_files += 1
-        try:
-            findings = plugin.scan(absolute)
-        except Exception as exc:
-            errors.append(f"Error scanning {absolute}: {exc}")
-            continue
-
-        for finding in findings:
-            engine._merge_finding(global_map, finding)
-
-    return ScanResult(
-        findings=tuple(global_map.values()),
-        scanned_files=scanned_files,
-        errors=tuple(errors),
-    )

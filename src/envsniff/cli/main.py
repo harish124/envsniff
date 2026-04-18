@@ -18,6 +18,7 @@ import click
 from envsniff.cli.formatters import format_json, format_markdown, format_table
 from envsniff.cli.welcome import show_if_first_run
 from envsniff.config import load_config
+from envsniff.describer.fallback import describe_var as fallback_describe
 from envsniff.env_example.merger import MergedEntry, MergeStatus, merge_findings
 from envsniff.env_example.parser import parse_env_example
 from envsniff.env_example.writer import write_env_example
@@ -189,8 +190,6 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
     # Build descriptions — always use fallback heuristics, override with AI
     # when --ai is requested.  Describes both NEW entries and EXISTING entries
     # that have no real description yet (only "# Added by envsniff" or empty).
-    from envsniff.describer.fallback import describe_var as fallback_describe
-
     existing_keys = {e.key for e in existing_entries}
     new_findings = [f for f in result.findings if f.name not in existing_keys]
 

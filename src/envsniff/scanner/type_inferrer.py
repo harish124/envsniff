@@ -15,7 +15,7 @@ _PATTERNS: list[tuple[tuple[str, ...], InferredType]] = [
     # Boolean flags
     (("DEBUG", "VERBOSE", "_ENABLED", "_DISABLED", "_FLAG", "_ACTIVE"), InferredType.BOOLEAN),
     # Integer
-    (("_PORT", "_TIMEOUT", "_RETRIES", "_MAX", "_MIN", "_COUNT", "_SIZE", "_LIMIT", "_TTL", "_INTERVAL"), InferredType.INTEGER),
+    (("_TIMEOUT", "_RETRIES", "_MAX", "_MIN", "_COUNT", "_SIZE", "_LIMIT", "_TTL", "_INTERVAL"), InferredType.INTEGER),
 ]
 
 # Exact name matches take priority

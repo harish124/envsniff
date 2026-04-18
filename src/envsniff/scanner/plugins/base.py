@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from tree_sitter import Node
+
     from envsniff.models import EnvVarFinding
 
 
@@ -27,3 +29,24 @@ class LanguageScanner(Protocol):
     def scan(self, file: Path) -> list[EnvVarFinding]:
         """Scan a single file and return all env var findings."""
         ...
+
+
+def walk_tree(node: Node) -> list[Node]:
+    """Walk all descendants of a node, returning them in pre-order.
+
+    This shared utility is used by Python, JavaScript, and Go plugins to
+    traverse tree-sitter parse trees without duplicating the walk logic.
+
+    Args:
+        node: The root node to walk from.
+
+    Returns:
+        All nodes in pre-order traversal (root first, then children).
+    """
+    result: list[Node] = []
+    stack = [node]
+    while stack:
+        current = stack.pop()
+        result.append(current)
+        stack.extend(reversed(current.children))
+    return result

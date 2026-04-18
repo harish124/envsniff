@@ -8,12 +8,15 @@ Reads from (in priority order):
 
 from __future__ import annotations
 
+import logging
 import tomllib
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -77,15 +80,16 @@ def load_config(directory: Path) -> EnvsniffConfig:
 # ---------------------------------------------------------------------------
 
 
-def _read_toml_safe(path: Path) -> dict | None:  # type: ignore[type-arg]
+def _read_toml_safe(path: Path) -> dict[str, Any] | None:
     """Read and parse a TOML file, returning None on any error."""
     try:
         return tomllib.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to read config file %s: %s", path, exc)
         return None
 
 
-def _extract_section(data: dict) -> dict:  # type: ignore[type-arg]
+def _extract_section(data: dict[str, Any]) -> dict[str, Any]:
     """Extract the envsniff config section from parsed TOML data.
 
     Supports both:
@@ -100,7 +104,7 @@ def _extract_section(data: dict) -> dict:  # type: ignore[type-arg]
     return data
 
 
-def _build_config(section: dict) -> EnvsniffConfig:  # type: ignore[type-arg]
+def _build_config(section: dict[str, Any]) -> EnvsniffConfig:
     """Build an :class:`EnvsniffConfig` from a raw dict section."""
     exclude_raw = section.get("exclude", ())
     exclude: tuple[str, ...] = tuple(exclude_raw) if exclude_raw else ()

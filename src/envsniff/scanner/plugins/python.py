@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import tree_sitter_python as tsp
 from tree_sitter import Language, Node, Parser
 
 from envsniff.models import EnvVarFinding, SourceLocation
+from envsniff.scanner.plugins.base import walk_tree
 from envsniff.scanner.type_inferrer import infer_type
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 _LANGUAGE = Language(tsp.language())
 _PARSER = Parser(_LANGUAGE)
@@ -114,17 +118,6 @@ def _make_finding(
     )
 
 
-def _walk(node: Node) -> list[Node]:
-    """Walk all descendants of a node, returning them in pre-order."""
-    result: list[Node] = []
-    stack = [node]
-    while stack:
-        current = stack.pop()
-        result.append(current)
-        stack.extend(reversed(current.children))
-    return result
-
-
 class PythonPlugin:
     """Scans Python source files for os.environ usage patterns."""
 
@@ -161,18 +154,20 @@ class PythonPlugin:
         # Handle binary / non-UTF-8 files gracefully
         try:
             source_lines = source.split(b"\n")
-        except Exception:
+        except Exception as exc:
+            logger.debug("Failed to split source lines for %s: %s", file, exc)
             return []
 
         try:
             tree = _PARSER.parse(source)
-        except Exception:
+        except Exception as exc:
+            logger.debug("Failed to parse %s: %s", file, exc)
             return []
 
         # Map of name → finding (for deduplication within file)
         findings_map: dict[str, EnvVarFinding] = {}
 
-        for node in _walk(tree.root_node):
+        for node in walk_tree(tree.root_node):
             finding = self._try_extract(node, file, source_lines)
             if finding is None:
                 continue

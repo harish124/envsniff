@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import tree_sitter_go as tsg
 from tree_sitter import Language, Node, Parser
 
 from envsniff.models import EnvVarFinding, SourceLocation
+from envsniff.scanner.plugins.base import walk_tree
 from envsniff.scanner.type_inferrer import infer_type
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 _LANGUAGE = Language(tsg.language())
 _PARSER = Parser(_LANGUAGE)
@@ -41,17 +45,6 @@ def _is_os_getenv_or_lookup(selector_node: Node) -> bool:
         and field.type == "field_identifier"
         and field.text in (b"Getenv", b"LookupEnv")
     )
-
-
-def _walk(node: Node) -> list[Node]:
-    """Walk all descendants in pre-order."""
-    result: list[Node] = []
-    stack = [node]
-    while stack:
-        current = stack.pop()
-        result.append(current)
-        stack.extend(reversed(current.children))
-    return result
 
 
 def _make_finding(
@@ -110,12 +103,13 @@ class GoPlugin:
 
         try:
             tree = _PARSER.parse(source)
-        except Exception:
+        except Exception as exc:
+            logger.debug("Failed to parse %s: %s", file, exc)
             return []
 
         findings_map: dict[str, EnvVarFinding] = {}
 
-        for node in _walk(tree.root_node):
+        for node in walk_tree(tree.root_node):
             finding = self._try_extract(node, file, source_lines)
             if finding is None:
                 continue
