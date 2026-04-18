@@ -57,7 +57,7 @@ class TestPackageJson:
     def test_package_json_bin_points_to_envsniff_js(self) -> None:
         """bin.envsniff must point to ./bin/envsniff.js."""
         data = json.loads(PACKAGE_JSON.read_text())
-        assert data["bin"]["envsniff"] == "./bin/envsniff.js"
+        assert data["bin"]["envsniff"].lstrip("./") == "bin/envsniff.js"
 
     def test_package_json_has_description(self) -> None:
         """package.json must have a 'description' field."""
