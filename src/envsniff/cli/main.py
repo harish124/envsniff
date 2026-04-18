@@ -186,29 +186,38 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
     # Merge
     merged = merge_findings(list(result.findings), existing_entries)
 
-    # Apply AI descriptions to NEW entries
+    # Build descriptions for NEW entries — always use fallback heuristics,
+    # override with AI when --ai is requested.
+    from envsniff.describer.fallback import describe_var as fallback_describe
+    existing_keys = {e.key for e in existing_entries}
+    new_findings = [f for f in result.findings if f.name not in existing_keys]
+
+    descriptions: dict[str, tuple[str, str]] = {
+        f.name: fallback_describe(f.name) for f in new_findings
+    }
+
     use_ai = ai or config.ai
     if use_ai:
         from envsniff.describer.ai import describe_batch
         provider, model = _prompt_ai_settings(
             ai_provider, ai_model, config.ai_provider, config.ai_model
         )
-        existing_keys = {e.key for e in existing_entries}
-        new_findings = [f for f in result.findings if f.name not in existing_keys]
-        descriptions = describe_batch(new_findings, provider=provider, model=model)
-        merged = [
-            MergedEntry(
-                key=entry.key,
-                value=entry.value,
-                comments=(f"# {descriptions[entry.key][0]}", f"# Example: {descriptions[entry.key][1]}")
-                if entry.status == MergeStatus.NEW and entry.key in descriptions
-                else entry.comments,
-                inline_comment=entry.inline_comment,
-                blank_line_before=entry.blank_line_before,
-                status=entry.status,
-            )
-            for entry in merged
-        ]
+        ai_descriptions = describe_batch(new_findings, provider=provider, model=model)
+        descriptions.update(ai_descriptions)
+
+    merged = [
+        MergedEntry(
+            key=entry.key,
+            value=entry.value,
+            comments=(f"# {descriptions[entry.key][0]}", f"# Example: {descriptions[entry.key][1]}")
+            if entry.status == MergeStatus.NEW and entry.key in descriptions
+            else entry.comments,
+            inline_comment=entry.inline_comment,
+            blank_line_before=entry.blank_line_before,
+            status=entry.status,
+        )
+        for entry in merged
+    ]
 
     # Write
     write_env_example(merged, output_path)
