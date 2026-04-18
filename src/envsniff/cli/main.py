@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import click
 
 from envsniff.cli.formatters import format_json, format_markdown, format_table
+from envsniff.cli.welcome import show_if_first_run
 from envsniff.config import load_config
 from envsniff.env_example.merger import MergedEntry, MergeStatus, merge_findings
 from envsniff.env_example.parser import parse_env_example
@@ -93,6 +94,7 @@ def _prompt_ai_settings(
 @click.version_option(package_name="envsniff")
 def cli() -> None:
     """envsniff — scan codebases for environment variables."""
+    show_if_first_run()
 
 
 # ---------------------------------------------------------------------------
