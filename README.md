@@ -14,6 +14,7 @@ No more "what env vars do I need to run this?" — `envsniff` finds them all and
 ## Table of Contents
 
 - [Why envsniff](#why-envsniff)
+- [Architecture](#architecture)
 - [How it works](#how-it-works)
 - [Install](#install)
 - [Usage](#usage)
@@ -28,7 +29,6 @@ No more "what env vars do I need to run this?" — `envsniff` finds them all and
 - [CI integration](#ci-integration)
 - [Configuration](#configuration)
 - [Output formats](#output-formats)
-- [Architecture](#architecture)
 
 ---
 
@@ -44,6 +44,38 @@ Most teams document environment variables manually — and it's always out of da
 | `env-checker`    | Runtime validation, not a scanner                          |
 
 **envsniff** is the only tool that scans your source code, finds every `os.getenv()` / `process.env.X` / `os.Getenv()` call, and generates a documented `.env.example` from scratch.
+
+---
+
+## Architecture
+
+```
+src/envsniff/
+├── models.py           # Immutable dataclasses (SourceLocation, EnvVarFinding, ScanResult)
+├── errors.py           # Exception hierarchy
+├── config.py           # .envsniff.toml / pyproject.toml loader
+├── scanner/
+│   ├── engine.py       # Orchestrates walk → dispatch → deduplicate
+│   ├── file_walker.py  # .gitignore-aware recursive walk (pathspec)
+│   ├── registry.py     # Maps file extensions to plugins
+│   ├── type_inferrer.py
+│   └── plugins/        # One file per language
+├── env_example/
+│   ├── parser.py       # Reads existing .env.example preserving structure
+│   ├── merger.py       # new / stale / existing classification
+│   └── writer.py       # Atomic write (temp → rename)
+├── describer/
+│   ├── types.py        # Name → InferredType rules
+│   ├── fallback.py     # Heuristic descriptions (no API needed)
+│   ├── cache.py        # SHA-256 keyed JSON cache
+│   └── ai.py           # Multi-provider AI descriptions (Anthropic, OpenAI, Gemini, Ollama)
+├── hooks/
+│   ├── precommit.py    # Staged-files-only scan
+│   └── ci.py           # Full scan with JSON output
+└── cli/
+    ├── main.py         # Click commands: scan / generate / check
+    └── formatters.py   # table / json / markdown renderers
+```
 
 ---
 
@@ -285,6 +317,7 @@ os.environ.get("DATABASE_URL")
 **What is never sent:** `.env` file contents, actual secret values, or any string literals used as defaults.
 
 > **Disclaimer — known limitation:** The scrubbing works on single-line calls. If a default value spans multiple lines, the regex cannot reliably detect it and that line may be sent as-is:
+>
 > ```python
 > # Multi-line call — default value on its own line may not be scrubbed:
 > url = os.environ.get(
@@ -292,6 +325,7 @@ os.environ.get("DATABASE_URL")
 >     "postgres://user:secret@prod/db"   # ← this line could be sent
 > )
 > ```
+>
 > This is an inherent limitation of line-by-line text scrubbing. The fix would require full AST-level analysis, which is not currently implemented. To be safe, avoid hardcoding real secrets as default values in your source code — use placeholder strings like `"postgres://localhost/mydb"` instead.
 
 ---
@@ -339,29 +373,29 @@ jobs:
       - uses: harish124/envsniff@v1
         with:
           path: "."
-          commit: "true"          # auto-commit updated .env.example
-          fail-on-drift: "false"  # set "true" to block merges on undocumented vars
+          commit: "true" # auto-commit updated .env.example
+          fail-on-drift: "false" # set "true" to block merges on undocumented vars
           commit-message: "chore: sync .env.example [skip ci]"
 ```
 
 ### Action inputs
 
-| Input | Default | Description |
-|-------|---------|-------------|
-| `path` | `.` | Directory to scan |
-| `commit` | `true` | Commit updated `.env.example` back to the PR branch |
-| `fail-on-drift` | `false` | Block the merge when new undocumented variables are found |
-| `commit-message` | `chore: sync .env.example` | Commit message for the auto-commit |
-| `python-version` | `3.12` | Python version used to install envsniff |
+| Input            | Default                    | Description                                               |
+| ---------------- | -------------------------- | --------------------------------------------------------- |
+| `path`           | `.`                        | Directory to scan                                         |
+| `commit`         | `true`                     | Commit updated `.env.example` back to the PR branch       |
+| `fail-on-drift`  | `false`                    | Block the merge when new undocumented variables are found |
+| `commit-message` | `chore: sync .env.example` | Commit message for the auto-commit                        |
+| `python-version` | `3.12`                     | Python version used to install envsniff                   |
 
 ### Action outputs
 
-| Output | Description |
-|--------|-------------|
-| `new-vars` | Comma-separated list of newly found variables not yet in `.env.example` |
-| `stale-vars` | Comma-separated list of variables in `.env.example` no longer in code |
-| `scanned-files` | Number of source files scanned |
-| `drift-detected` | `true` when new undocumented variables were found |
+| Output           | Description                                                             |
+| ---------------- | ----------------------------------------------------------------------- |
+| `new-vars`       | Comma-separated list of newly found variables not yet in `.env.example` |
+| `stale-vars`     | Comma-separated list of variables in `.env.example` no longer in code   |
+| `scanned-files`  | Number of source files scanned                                          |
+| `drift-detected` | `true` when new undocumented variables were found                       |
 
 > **Requires:** Repository Settings → Actions → General → Workflow permissions → **Read and write permissions**
 
@@ -433,36 +467,4 @@ errors[0]:
 | ------------ | ------- | -------- | ------- |
 | DATABASE_URL | URL     | yes      | —       |
 | DEBUG        | BOOLEAN | no       | false   |
-```
-
----
-
-## Architecture
-
-```
-src/envsniff/
-├── models.py           # Immutable dataclasses (SourceLocation, EnvVarFinding, ScanResult)
-├── errors.py           # Exception hierarchy
-├── config.py           # .envsniff.toml / pyproject.toml loader
-├── scanner/
-│   ├── engine.py       # Orchestrates walk → dispatch → deduplicate
-│   ├── file_walker.py  # .gitignore-aware recursive walk (pathspec)
-│   ├── registry.py     # Maps file extensions to plugins
-│   ├── type_inferrer.py
-│   └── plugins/        # One file per language
-├── env_example/
-│   ├── parser.py       # Reads existing .env.example preserving structure
-│   ├── merger.py       # new / stale / existing classification
-│   └── writer.py       # Atomic write (temp → rename)
-├── describer/
-│   ├── types.py        # Name → InferredType rules
-│   ├── fallback.py     # Heuristic descriptions (no API needed)
-│   ├── cache.py        # SHA-256 keyed JSON cache
-│   └── ai.py           # Multi-provider AI descriptions (Anthropic, OpenAI, Gemini, Ollama)
-├── hooks/
-│   ├── precommit.py    # Staged-files-only scan
-│   └── ci.py           # Full scan with JSON output
-└── cli/
-    ├── main.py         # Click commands: scan / generate / check
-    └── formatters.py   # table / json / markdown renderers
 ```
