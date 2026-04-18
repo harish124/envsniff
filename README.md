@@ -24,6 +24,7 @@ No more "what env vars do I need to run this?" — `envsniff` finds them all and
 - [Technologies](#technologies)
 - [AI descriptions](#ai-descriptions)
 - [Pre-commit hook](#pre-commit-hook)
+- [GitHub Action](#github-action)
 - [CI integration](#ci-integration)
 - [Configuration](#configuration)
 - [Output formats](#output-formats)
@@ -284,6 +285,63 @@ repos:
 ```
 
 This blocks commits that introduce undocumented environment variables.
+
+---
+
+## GitHub Action
+
+Add envsniff to any repository in seconds. On every pull request it scans your code, updates `.env.example`, and commits the result automatically — no manual step needed.
+
+```yaml
+# .github/workflows/envsniff.yml
+name: Sync .env.example
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  envsniff:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: harish124/envsniff@v1
+        with:
+          path: "."
+          commit: "true"          # auto-commit updated .env.example
+          fail-on-drift: "false"  # set "true" to block merges on undocumented vars
+          commit-message: "chore: sync .env.example [skip ci]"
+```
+
+### Action inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `path` | `.` | Directory to scan |
+| `commit` | `true` | Commit updated `.env.example` back to the PR branch |
+| `fail-on-drift` | `false` | Block the merge when new undocumented variables are found |
+| `commit-message` | `chore: sync .env.example` | Commit message for the auto-commit |
+| `python-version` | `3.12` | Python version used to install envsniff |
+
+### Action outputs
+
+| Output | Description |
+|--------|-------------|
+| `new-vars` | Comma-separated list of newly found variables not yet in `.env.example` |
+| `stale-vars` | Comma-separated list of variables in `.env.example` no longer in code |
+| `scanned-files` | Number of source files scanned |
+| `drift-detected` | `true` when new undocumented variables were found |
+
+> **Requires:** Repository Settings → Actions → General → Workflow permissions → **Read and write permissions**
+
+A ready-to-copy workflow file is available at [`.github/examples/envsniff.yml`](.github/examples/envsniff.yml).
 
 ---
 

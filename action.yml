@@ -1,0 +1,156 @@
+name: "envsniff"
+description: "Scan your codebase for environment variables and keep .env.example in sync automatically."
+author: "harish124"
+
+branding:
+  icon: "search"
+  color: "green"
+
+inputs:
+  path:
+    description: "Directory to scan. Defaults to the repository root."
+    required: false
+    default: "."
+
+  commit:
+    description: "Commit the updated .env.example back to the branch when changes are detected."
+    required: false
+    default: "true"
+
+  fail-on-drift:
+    description: "Exit with a non-zero code when new undocumented variables are found (drift detected). Useful for blocking merges."
+    required: false
+    default: "false"
+
+  commit-message:
+    description: "Commit message used when committing .env.example changes."
+    required: false
+    default: "chore: sync .env.example via envsniff"
+
+  python-version:
+    description: "Python version used to install and run envsniff."
+    required: false
+    default: "3.12"
+
+outputs:
+  new-vars:
+    description: "Comma-separated list of newly discovered environment variables not yet in .env.example."
+    value: ${{ steps.scan.outputs.new_vars }}
+
+  stale-vars:
+    description: "Comma-separated list of variables present in .env.example but no longer found in code."
+    value: ${{ steps.scan.outputs.stale_vars }}
+
+  scanned-files:
+    description: "Number of source files scanned."
+    value: ${{ steps.scan.outputs.scanned_files }}
+
+  drift-detected:
+    description: "true if new undocumented variables were found, false otherwise."
+    value: ${{ steps.scan.outputs.drift_detected }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install envsniff
+      shell: bash
+      run: pip install envsniff --quiet
+
+    - name: Run envsniff generate
+      id: scan
+      shell: bash
+      env:
+        ENVSNIFF_PATH: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+
+        # Run generate to update .env.example in-place
+        envsniff generate "$ENVSNIFF_PATH"
+
+        # Run check to capture structured output
+        RAW=$(envsniff check "$ENVSNIFF_PATH" --format json 2>/dev/null || true)
+
+        NEW_VARS=$(echo "$RAW" | python3 -c "
+        import sys, json
+        d = json.load(sys.stdin)
+        print(','.join(d.get('new_vars', [])))
+        " 2>/dev/null || echo "")
+
+        STALE_VARS=$(echo "$RAW" | python3 -c "
+        import sys, json
+        d = json.load(sys.stdin)
+        print(','.join(d.get('stale_vars', [])))
+        " 2>/dev/null || echo "")
+
+        SCANNED=$(echo "$RAW" | python3 -c "
+        import sys, json
+        d = json.load(sys.stdin)
+        print(d.get('scanned_files', 0))
+        " 2>/dev/null || echo "0")
+
+        DRIFT="false"
+        if [ -n "$NEW_VARS" ]; then
+          DRIFT="true"
+        fi
+
+        echo "new_vars=$NEW_VARS"       >> "$GITHUB_OUTPUT"
+        echo "stale_vars=$STALE_VARS"   >> "$GITHUB_OUTPUT"
+        echo "scanned_files=$SCANNED"   >> "$GITHUB_OUTPUT"
+        echo "drift_detected=$DRIFT"    >> "$GITHUB_OUTPUT"
+
+        echo "### envsniff results" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Field | Value |"    >> "$GITHUB_STEP_SUMMARY"
+        echo "|-------|-------|"    >> "$GITHUB_STEP_SUMMARY"
+        echo "| Scanned files | $SCANNED |"  >> "$GITHUB_STEP_SUMMARY"
+        echo "| New vars | ${NEW_VARS:-none} |"    >> "$GITHUB_STEP_SUMMARY"
+        echo "| Stale vars | ${STALE_VARS:-none} |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Drift detected | $DRIFT |"          >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Commit updated .env.example
+      if: inputs.commit == 'true'
+      shell: bash
+      env:
+        COMMIT_MSG: ${{ inputs.commit-message }}
+        ENVSNIFF_PATH: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+
+        git config user.name  "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Resolve the .env.example path relative to the scan path
+        ENV_FILE=$(python3 -c "
+        import sys
+        sys.path.insert(0, '.')
+        try:
+            from envsniff.config import load_config
+            from pathlib import Path
+            cfg = load_config(Path('$ENVSNIFF_PATH'))
+            print(cfg.output)
+        except Exception:
+            print('.env.example')
+        ")
+
+        TARGET="$ENVSNIFF_PATH/$ENV_FILE"
+
+        if git diff --quiet "$TARGET" 2>/dev/null; then
+          echo "No changes to $TARGET — nothing to commit."
+        else
+          git add "$TARGET"
+          git commit -m "$COMMIT_MSG"
+          git push
+          echo "Committed updated $TARGET."
+        fi
+
+    - name: Fail on drift
+      if: inputs.fail-on-drift == 'true' && steps.scan.outputs.drift_detected == 'true'
+      shell: bash
+      run: |
+        echo "::error::envsniff detected undocumented environment variables: ${{ steps.scan.outputs.new_vars }}"
+        echo "Run 'envsniff generate' locally and commit the updated .env.example."
+        exit 1

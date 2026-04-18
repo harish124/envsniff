@@ -1,0 +1,35 @@
+# Copy this file to .github/workflows/envsniff.yml in your repository.
+#
+# What it does:
+#   - Scans your codebase for environment variables on every PR
+#   - Automatically updates .env.example and commits the result
+#   - Optionally blocks merges when undocumented variables are found
+#
+# Requires:
+#   - Repository Settings → Actions → General → Workflow permissions → Read and write permissions
+
+name: Sync .env.example
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  envsniff:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to commit .env.example back to the PR branch
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Checkout the PR branch so we can push back to it
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: harish124/envsniff@v1
+        with:
+          path: "."             # directory to scan (default: repo root)
+          commit: "true"        # auto-commit updated .env.example
+          fail-on-drift: "false" # set "true" to block merges on undocumented vars
+          commit-message: "chore: sync .env.example [skip ci]"
