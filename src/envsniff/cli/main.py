@@ -218,6 +218,14 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
         ai_descriptions = describe_batch(findings_to_describe, provider=provider, model=model)
         descriptions.update(ai_descriptions)
 
+    def _build_comments(desc_example: tuple[str, str]) -> tuple[str, ...]:
+        desc, example = desc_example
+        lines: list[str] = ["# Added by envsniff", "#", f"# Description: {desc}"]
+        if example:
+            lines.append(f"# Example:     {example}")
+        lines.append("#")
+        return tuple(lines)
+
     def _needs_description(entry: MergedEntry) -> bool:
         return entry.key in descriptions and (
             entry.status == MergeStatus.NEW or entry.key in undescribed_existing
@@ -227,13 +235,7 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
         MergedEntry(
             key=entry.key,
             value=entry.value,
-            comments=(
-                "# Added by envsniff",
-                "#",
-                f"# Description: {descriptions[entry.key][0]}",
-                f"# Example:     {descriptions[entry.key][1]}",
-                "#",
-            )
+            comments=_build_comments(descriptions[entry.key])
             if _needs_description(entry)
             else entry.comments,
             inline_comment=entry.inline_comment,
