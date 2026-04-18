@@ -270,6 +270,30 @@ Set the API key for your chosen provider before running:
 - Caches results in `~/.cache/envsniff/descriptions.json` — API is never called twice for the same var
 - Falls back to heuristic descriptions if the provider is unavailable
 
+### Privacy
+
+envsniff scrubs code snippets before sending anything to the AI provider. Default values (the second argument in calls like `os.environ.get("KEY", "value")`) are stripped using regex so only the variable name and call structure are transmitted:
+
+```python
+# What's in your code:
+db = os.environ.get("DATABASE_URL", "postgres://user:secret@prod/db")
+
+# What the AI receives:
+os.environ.get("DATABASE_URL")
+```
+
+**What is never sent:** `.env` file contents, actual secret values, or any string literals used as defaults.
+
+> **Disclaimer — known limitation:** The scrubbing works on single-line calls. If a default value spans multiple lines, the regex cannot reliably detect it and that line may be sent as-is:
+> ```python
+> # Multi-line call — default value on its own line may not be scrubbed:
+> url = os.environ.get(
+>     "DATABASE_URL",
+>     "postgres://user:secret@prod/db"   # ← this line could be sent
+> )
+> ```
+> This is an inherent limitation of line-by-line text scrubbing. The fix would require full AST-level analysis, which is not currently implemented. To be safe, avoid hardcoding real secrets as default values in your source code — use placeholder strings like `"postgres://localhost/mydb"` instead.
+
 ---
 
 ## Pre-commit hook

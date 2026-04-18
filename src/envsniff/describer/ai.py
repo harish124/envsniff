@@ -102,8 +102,39 @@ def _call_provider(client: object, provider: str, model: str, prompt: str) -> st
     raise ValueError(f"Unknown provider: {provider!r}")
 
 
+def _scrub_snippet(snippet: str) -> str:
+    """Remove string-literal default values from a single-line code snippet.
+
+    Strips the second (default) argument when it is a plain string literal,
+    so no hardcoded values are sent to the AI provider.
+
+    Handled::
+
+        os.environ.get("KEY", "value")   →  os.environ.get("KEY")
+        os.getenv("KEY", 'value')        →  os.getenv("KEY")
+        ENV.fetch("KEY", "value")        →  ENV.fetch("KEY")
+
+    Not handled (left untouched — see note in ai.py)::
+
+        os.environ.get(          ← multi-line call: snippet is one line only
+            "KEY",
+            "value"
+        )
+        os.environ.get("KEY", f"prefix-{host}")   ← f-string / expression
+        os.environ.get("KEY", DEFAULT_VAR)         ← variable default (not sensitive)
+    """
+    import re
+
+    # Strip ", 'value'" or ', "value"' style default string literals
+    return re.sub(r',\s*(["\']).*?\1(?=\s*\))', "", snippet)
+
+
 def _build_prompt(findings: list[EnvVarFinding]) -> str:
-    """Build the prompt for a batch of findings."""
+    """Build the prompt for a batch of findings.
+
+    Only variable names and scrubbed code snippets are sent — no default
+    values or string literals that could contain real secrets.
+    """
     lines = [
         "You are a developer documentation assistant.",
         "For each environment variable below, provide a short description and a realistic example value.",
@@ -112,9 +143,8 @@ def _build_prompt(findings: list[EnvVarFinding]) -> str:
         "Variables:",
     ]
     for f in findings:
-        snippets = "; ".join(loc.snippet for loc in f.locations[:3])
-        default = f" (default: {f.default_value})" if f.default_value else ""
-        lines.append(f"  {f.name}{default} — seen in: {snippets}")
+        scrubbed = "; ".join(_scrub_snippet(loc.snippet) for loc in f.locations[:3])
+        lines.append(f"  {f.name} — seen in: {scrubbed}")
     lines.append("")
     lines.append("Respond with JSON only, no markdown fencing.")
     return "\n".join(lines)
