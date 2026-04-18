@@ -62,6 +62,10 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Assets — large source video files (keep only processed GIFs)
+assets/*.mov
+assets/*.mp4
+
 # Personal tooling (not project code)
 .claude/plan/
 .repowise/
