@@ -95,7 +95,7 @@ def _extract_section(data: dict) -> dict:  # type: ignore[type-arg]
     # Nested [tool.envsniff] takes precedence if present
     nested = data.get("tool", {}).get("envsniff")
     if nested is not None:
-        return nested  # type: ignore[return-value]
+        return nested  # type: ignore[no-any-return]
     # Fall back to flat top-level keys (only recognised keys are used)
     return data
 

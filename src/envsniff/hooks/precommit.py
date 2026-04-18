@@ -125,7 +125,7 @@ def _scan_file_list(engine: ScanEngine, files: list[Path], repo_root: Path) -> S
 
         scanned_files += 1
         try:
-            findings = plugin.scan(absolute)  # type: ignore[union-attr]
+            findings = plugin.scan(absolute)
         except Exception as exc:
             errors.append(f"Error scanning {absolute}: {exc}")
             continue

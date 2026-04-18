@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from envsniff.scanner.plugins.base import LanguageScanner
 from envsniff.scanner.plugins.docker import DockerPlugin
 from envsniff.scanner.plugins.golang import GoPlugin
 from envsniff.scanner.plugins.javascript import JavaScriptPlugin
@@ -22,7 +23,7 @@ class PluginRegistry:
     """
 
     def __init__(self) -> None:
-        self._plugins = [
+        self._plugins: list[LanguageScanner] = [
             PythonPlugin(),
             JavaScriptPlugin(),
             GoPlugin(),
@@ -30,19 +31,19 @@ class PluginRegistry:
             DockerPlugin(),
         ]
         # Build extension → plugin map
-        self._ext_map: dict[str, object] = {}
+        self._ext_map: dict[str, LanguageScanner] = {}
         for plugin in self._plugins:
             for ext in plugin.supported_extensions:
                 self._ext_map[ext] = plugin
 
         # Build filename → plugin map for plugins with supported_filenames
-        self._name_map: dict[str, object] = {}
+        self._name_map: dict[str, LanguageScanner] = {}
         for plugin in self._plugins:
-            filenames = getattr(plugin, "supported_filenames", frozenset())
+            filenames: frozenset[str] = getattr(plugin, "supported_filenames", frozenset())
             for fname in filenames:
                 self._name_map[fname] = plugin
 
-    def get_plugin(self, file: Path) -> object | None:
+    def get_plugin(self, file: Path) -> LanguageScanner | None:
         """Return the plugin for the given file path, or None if unsupported.
 
         Filename-based lookup takes priority over extension-based lookup.

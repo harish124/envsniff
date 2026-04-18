@@ -63,7 +63,7 @@ def _create_client(provider: str) -> object:
         import os
 
         import google.generativeai as genai  # lazy import
-        genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+        genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))  # type: ignore[attr-defined]
         return genai
 
     if provider == "ollama":
@@ -92,7 +92,7 @@ def _call_provider(client: object, provider: str, model: str, prompt: str) -> st
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
-        return response.choices[0].message.content or ""  # type: ignore[no-any-return]
+        return response.choices[0].message.content or ""
 
     if provider == "gemini":
         model_obj = client.GenerativeModel(model)  # type: ignore[attr-defined]

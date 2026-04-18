@@ -54,7 +54,7 @@ class ScanEngine:
 
             scanned_files += 1
             try:
-                findings = plugin.scan(file)  # type: ignore[union-attr]
+                findings = plugin.scan(file)
             except FileNotFoundError:
                 errors.append(f"File not found: {file}")
                 continue
