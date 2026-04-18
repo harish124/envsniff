@@ -125,11 +125,11 @@ def scan(path: str, output_format: str, exclude: tuple[str, ...]) -> None:
     result: ScanResult = engine.scan(resolved)
 
     if output_format == "json":
-        click.echo(format_json(result))
+        click.echo(format_json(result, root=resolved))
     elif output_format == "md":
-        click.echo(format_markdown(result))
+        click.echo(format_markdown(result, root=resolved))
     else:
-        click.echo(format_table(result))
+        click.echo(format_table(result, root=resolved))
 
 
 # ---------------------------------------------------------------------------

@@ -15,12 +15,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from envsniff.models import ScanResult
 
+
+def _rel(file: Path, root: Path) -> str:
+    """Return *file* relative to *root*, falling back to the filename only."""
+    try:
+        return str(file.relative_to(root))
+    except ValueError:
+        return file.name
+
+
 # ---------------------------------------------------------------------------
 # Table formatter
 # ---------------------------------------------------------------------------
 
 
-def format_table(result: ScanResult) -> str:
+def format_table(result: ScanResult, root: Path | None = None) -> str:
     """Render *result* as a plain-text table.
 
     Uses simple ASCII box drawing so it works without Rich in tests.
@@ -28,10 +37,13 @@ def format_table(result: ScanResult) -> str:
 
     Args:
         result: The :class:`~envsniff.models.ScanResult` to format.
+        root:   Scan root used to display relative file paths. Falls back
+                to filename-only when omitted.
 
     Returns:
         A multi-line string suitable for printing to stdout.
     """
+    _root = root or Path.cwd()
     lines: list[str] = []
 
     header = f"{'Name':<30} {'Type':<10} {'Required':<10} {'Default':<15} {'Locations'}"
@@ -42,7 +54,7 @@ def format_table(result: ScanResult) -> str:
 
     for finding in result.findings:
         locs = ", ".join(
-            f"{Path(loc.file).name}:{loc.line}" for loc in finding.locations
+            f"{_rel(loc.file, _root)}:{loc.line}" for loc in finding.locations
         )
         default = finding.default_value or ""
         required = "yes" if finding.is_required else "no"
@@ -70,7 +82,7 @@ def format_table(result: ScanResult) -> str:
 # ---------------------------------------------------------------------------
 
 
-def format_json(result: ScanResult) -> str:
+def format_json(result: ScanResult, root: Path | None = None) -> str:
     """Render *result* as a JSON string.
 
     Schema::
@@ -82,16 +94,18 @@ def format_json(result: ScanResult) -> str:
             default_value: null
             language: python
             locations[1]{file,line,column,snippet}:
-              app.py,10,0,...
+              src/app.py,10,0,...
         scanned_files: 5
         errors[0]:
 
     Args:
         result: The :class:`~envsniff.models.ScanResult` to format.
+        root:   Scan root used to display relative file paths.
 
     Returns:
         A JSON string.
     """
+    _root = root or Path.cwd()
     data = {
         "findings": [
             {
@@ -102,7 +116,7 @@ def format_json(result: ScanResult) -> str:
                 "language": f.language,
                 "locations": [
                     {
-                        "file": str(loc.file),
+                        "file": _rel(loc.file, _root),
                         "line": loc.line,
                         "column": loc.column,
                         "snippet": loc.snippet,
@@ -123,17 +137,19 @@ def format_json(result: ScanResult) -> str:
 # ---------------------------------------------------------------------------
 
 
-def format_markdown(result: ScanResult) -> str:
+def format_markdown(result: ScanResult, root: Path | None = None) -> str:
     """Render *result* as a GitHub-flavoured Markdown table.
 
     Columns: Name | Type | Required | Default | Locations
 
     Args:
         result: The :class:`~envsniff.models.ScanResult` to format.
+        root:   Scan root used to display relative file paths.
 
     Returns:
         A multi-line markdown string.
     """
+    _root = root or Path.cwd()
     lines: list[str] = []
 
     # Header row
@@ -143,7 +159,7 @@ def format_markdown(result: ScanResult) -> str:
 
     for finding in result.findings:
         locs = "<br>".join(
-            f"{Path(loc.file).name}:{loc.line}" for loc in finding.locations
+            f"{_rel(loc.file, _root)}:{loc.line}" for loc in finding.locations
         )
         default = finding.default_value or ""
         required = "yes" if finding.is_required else "no"
