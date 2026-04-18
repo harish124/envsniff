@@ -13,19 +13,27 @@
 
 Last indexed: 2026-04-18. Confidence: 100%.
 ### Architecture
-repo is a specialized utility designed to automate the discovery, inference, and management of environment variables within a codebase. By scanning project files across multiple languages, it identifies required environment configurations and helps maintain synchronization between code usage and .env.example files. It is designed to improve developer experience by reducing the manual overhead of managing environment variable documentation and validation. The project is primarily a Python-based tool with support for multi-language environment scanning.
+repo is a specialized utility designed to sniff, scan, and manage environment variables across diverse codebases. It automates the discovery of environment configurations, infers variable types, and manages .env.example files. The project is primarily built in Python and is designed to integrate seamlessly into development workflows, including support for pre-commit hooks and multi-language project scanning. The project is a Python-centric codebase with support for multi-language environment detection.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `src` | The src module contains the core logic for **envsniff**, a utility designed to a | — |
+| `src` | The src module serves as the core engine for **envsniff**, a utility designed to | — |
 | `tests` | The tests module serves as the comprehensive testing suite for the envsniff proj | — |
-| `npx-wrapper` | The npx-wrapper module provides a lightweight utility designed to interface with | — |
+| `npx-wrapper` | The npx-wrapper module provides a lightweight utility designed to inspect and re | — |
 ### Entry Points
 - `src/envsniff/cli/main.py`
 ### Tech Stack
 **Languages:** Python
 
 
+### Hotspots (High Churn)
+| File | Churn | 90d Commits | Owner |
+|------|-------|-------------|-------|
+| `README.md` | 98.7th %ile | 5 | Harish |
+| `src/envsniff/scanner/registry.py` | 97.4th %ile | 4 | Harish |
+| `src/envsniff/describer/ai.py` | 96.1th %ile | 4 | Harish |
+| `src/envsniff/scanner/engine.py` | 94.7th %ile | 3 | Harish |
+| `src/envsniff/hooks/precommit.py` | 93.4th %ile | 3 | Harish |
 
 ### Repowise MCP Tools
 
