@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envsniff.models import EnvVarFinding, SourceLocation
 from envsniff.scanner.type_inferrer import infer_type
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Matches: ENV VAR_NAME=value  or  ENV VAR_NAME value  (uppercase only)
 _ENV_RE = re.compile(r"^ENV\s+([A-Z_][A-Z0-9_]*)(?:=(.*))?", re.MULTILINE)
@@ -29,10 +31,9 @@ _SUPPORTED_FILENAMES = frozenset({
 def _strip_quotes(value: str) -> str:
     """Remove surrounding quotes from a Dockerfile value."""
     stripped = value.strip()
-    if len(stripped) >= 2:
-        if (stripped.startswith('"') and stripped.endswith('"')) or \
-           (stripped.startswith("'") and stripped.endswith("'")):
-            return stripped[1:-1]
+    if len(stripped) >= 2 and ((stripped.startswith('"') and stripped.endswith('"')) or \
+           (stripped.startswith("'") and stripped.endswith("'"))):
+        return stripped[1:-1]
     return stripped
 
 

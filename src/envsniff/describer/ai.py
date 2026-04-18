@@ -18,10 +18,13 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envsniff.describer.cache import DescriptionCache, make_cache_key
 from envsniff.describer.fallback import describe_var as fallback_describe
-from envsniff.models import EnvVarFinding
+
+if TYPE_CHECKING:
+    from envsniff.models import EnvVarFinding
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +61,7 @@ def _create_client(provider: str) -> object:
 
     if provider == "gemini":
         import os
+
         import google.generativeai as genai  # lazy import
         genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
         return genai

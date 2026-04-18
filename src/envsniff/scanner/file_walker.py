@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pathspec
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Directories always skipped regardless of .gitignore
 _DEFAULT_EXCLUDE_DIRS = frozenset({
@@ -96,10 +98,7 @@ class FileWalker:
                 continue
 
             rel_str = str(rel_path)
-            if entry.is_dir():
-                rel_str_with_slash = rel_str + "/"
-            else:
-                rel_str_with_slash = rel_str
+            rel_str_with_slash = rel_str + "/" if entry.is_dir() else rel_str
 
             # Check gitignore patterns
             if gitignore_spec.match_file(rel_str) or gitignore_spec.match_file(rel_str_with_slash):
@@ -111,9 +110,8 @@ class FileWalker:
 
             if entry.is_dir():
                 self._recurse(entry, root, gitignore_spec, extra_spec, results)
-            elif entry.is_file():
-                if self._matches_file(entry):
-                    results.append(entry)
+            elif entry.is_file() and self._matches_file(entry):
+                results.append(entry)
 
     def _matches_file(self, file: Path) -> bool:
         """Return True if the file should be included based on extension filter."""

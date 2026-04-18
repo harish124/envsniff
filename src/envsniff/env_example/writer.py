@@ -6,10 +6,13 @@ corruption if the process is interrupted mid-write.
 
 from __future__ import annotations
 
+import contextlib
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from envsniff.env_example.merger import MergedEntry
+if TYPE_CHECKING:
+    from envsniff.env_example.merger import MergedEntry
 
 
 def write_env_example(entries: list[MergedEntry], path: Path) -> None:
@@ -34,10 +37,8 @@ def write_env_example(entries: list[MergedEntry], path: Path) -> None:
         Path(tmp_name).rename(path)
     except Exception:
         # Best-effort cleanup of the temp file before re-raising.
-        try:
+        with contextlib.suppress(OSError):
             Path(tmp_name).unlink(missing_ok=True)
-        except OSError:
-            pass
         raise
 
 

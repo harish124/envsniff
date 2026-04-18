@@ -10,13 +10,15 @@ Algorithm:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
+from typing import TYPE_CHECKING
 
-from envsniff.env_example.parser import EnvEntry
-from envsniff.models import EnvVarFinding
+if TYPE_CHECKING:
+    from envsniff.env_example.parser import EnvEntry
+    from envsniff.models import EnvVarFinding
 
 
-class MergeStatus(str, Enum):
+class MergeStatus(StrEnum):
     """Classification of a merged entry."""
 
     EXISTING = "EXISTING"

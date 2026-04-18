@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from envsniff.models import InferredType
 
-
 # Suffix/prefix patterns ordered from most to least specific
 _PATTERNS: list[tuple[tuple[str, ...], InferredType]] = [
     # URL / URI

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envsniff.models import EnvVarFinding, SourceLocation
 from envsniff.scanner.type_inferrer import infer_type
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Matches ${VAR}, ${VAR:-default}, ${VAR:?msg}, ${VAR:+val}, ${VAR:=val}, ${#VAR}
 # Captures the variable name before any modifier
@@ -23,9 +25,7 @@ _SKIP_SINGLE_CHAR = frozenset({"$", "?", "!", "@", "*", "#", "-", "_"})
 
 def _is_special_var(name: str) -> bool:
     """Return True if the name is a shell special variable to skip."""
-    if len(name) == 1 and (name.isdigit() or name in _SKIP_SINGLE_CHAR):
-        return True
-    return False
+    return bool(len(name) == 1 and (name.isdigit() or name in _SKIP_SINGLE_CHAR))
 
 
 class ShellPlugin:

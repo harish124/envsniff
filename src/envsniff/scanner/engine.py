@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from envsniff.models import EnvVarFinding, ScanResult, SourceLocation
+from envsniff.models import EnvVarFinding, ScanResult
 from envsniff.scanner.file_walker import FileWalker
-from envsniff.scanner.plugins.docker import DockerPlugin
 from envsniff.scanner.registry import PluginRegistry
-from envsniff.scanner.type_inferrer import infer_type
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class ScanEngine:

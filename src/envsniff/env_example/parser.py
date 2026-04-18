@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envsniff.errors import ParseError
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Matches optional 'export ' prefix, then KEY=value (value may be empty)
 _KEY_VALUE_RE = re.compile(
@@ -142,10 +145,7 @@ def parse_env_example(path: Path) -> list[EnvEntry]:
 
             # blank_line_before is True when we saw a blank line before the
             # comment block (or the key line itself if there is no comment).
-            if not pending_comments:
-                entry_blank_before = seen_blank
-            else:
-                entry_blank_before = blank_line_before
+            entry_blank_before = seen_blank if not pending_comments else blank_line_before
 
             entries.append(
                 EnvEntry(

@@ -11,17 +11,20 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 
 from envsniff.cli.formatters import format_json, format_markdown, format_table
 from envsniff.config import load_config
-from envsniff.env_example.merger import MergeStatus, MergedEntry, merge_findings
+from envsniff.env_example.merger import MergedEntry, MergeStatus, merge_findings
 from envsniff.env_example.parser import parse_env_example
 from envsniff.env_example.writer import write_env_example
 from envsniff.errors import ParseError
-from envsniff.models import ScanResult
 from envsniff.scanner.engine import ScanEngine
+
+if TYPE_CHECKING:
+    from envsniff.models import ScanResult
 
 _PROVIDER_EXAMPLES: dict[str, str] = {
     "anthropic": "claude-haiku-4-5-20251001",
@@ -164,10 +167,7 @@ def generate(path: str, output: str | None, ai: bool, ai_provider: str | None, a
     config = load_config(resolved)
 
     # Determine output path
-    if output is not None:
-        output_path = Path(output)
-    else:
-        output_path = resolved / config.output
+    output_path = Path(output) if output is not None else resolved / config.output
 
     # Scan
     engine = ScanEngine(exclude=list(config.exclude))

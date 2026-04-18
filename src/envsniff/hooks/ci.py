@@ -7,14 +7,16 @@ Provides:
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envsniff.config import load_config
 from envsniff.env_example.merger import MergeStatus, merge_findings
 from envsniff.env_example.parser import parse_env_example
 from envsniff.errors import ParseError
 from envsniff.scanner.engine import ScanEngine
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def run_ci_check(repo_root: Path, output_format: str = "json") -> int:

@@ -9,14 +9,17 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envsniff.config import load_config
 from envsniff.env_example.merger import MergeStatus, merge_findings
 from envsniff.env_example.parser import parse_env_example
 from envsniff.errors import ParseError
-from envsniff.models import ScanResult
 from envsniff.scanner.engine import ScanEngine
 from envsniff.scanner.registry import PluginRegistry
+
+if TYPE_CHECKING:
+    from envsniff.models import ScanResult
 
 
 def get_staged_files() -> list[Path]:

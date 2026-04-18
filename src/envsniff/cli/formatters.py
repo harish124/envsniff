@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from envsniff.models import ScanResult
-
+if TYPE_CHECKING:
+    from envsniff.models import ScanResult
 
 # ---------------------------------------------------------------------------
 # Table formatter

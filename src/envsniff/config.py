@@ -9,8 +9,11 @@ Reads from (in priority order):
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass(frozen=True)

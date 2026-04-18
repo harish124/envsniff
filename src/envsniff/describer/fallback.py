@@ -6,8 +6,6 @@ returns a ``(description, example_value)`` pair for any variable name.
 
 from __future__ import annotations
 
-import re
-
 # ---------------------------------------------------------------------------
 # Exact-match overrides (checked before pattern rules)
 # ---------------------------------------------------------------------------

@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
-from tree_sitter import Language, Node, Parser
 import tree_sitter_python as tsp
+from tree_sitter import Language, Node, Parser
 
 from envsniff.models import EnvVarFinding, SourceLocation
 from envsniff.scanner.type_inferrer import infer_type
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _LANGUAGE = Language(tsp.language())
 _PARSER = Parser(_LANGUAGE)
