@@ -1,0 +1,32 @@
+# Sample Dockerfile with ENV and ARG patterns for testing envsniff
+FROM ubuntu:22.04
+
+# Pattern 1: ARG without default
+ARG BUILD_VERSION
+
+# Pattern 2: ARG with default value
+ARG NODE_ENV=production
+
+# Pattern 3: ENV single var
+ENV APP_PORT=8080
+
+# Pattern 4: ENV var used in RUN
+ENV DATABASE_URL=""
+
+# Pattern 5: ARG used before FROM (build-time only)
+ARG BASE_IMAGE=ubuntu
+
+# Pattern 6: multi-value ENV (old syntax - space separated)
+ENV SECRET_KEY mysecretkey123
+
+# Edge case: lowercase should be skipped by our regex
+# (requires uppercase [A-Z_][A-Z0-9_]*)
+ARG lowercase_arg=value
+
+# Pattern 7: ENV with complex value
+ENV API_BASE_URL=https://api.example.com
+
+WORKDIR /app
+COPY . .
+RUN echo "Building version ${BUILD_VERSION}"
+CMD ["node", "server.js"]

@@ -1,0 +1,8 @@
+{
+  "name": "envsniff",
+  "version": "0.1.0",
+  "description": "Scan codebases for environment variables",
+  "bin": { "envsniff": "./bin/envsniff.js" },
+  "files": ["bin/"],
+  "engines": { "node": ">=16" }
+}

@@ -1,0 +1,6 @@
+- id: envsniff-check
+  name: envsniff
+  entry: envsniff check
+  language: python
+  pass_filenames: false
+  always_run: true
