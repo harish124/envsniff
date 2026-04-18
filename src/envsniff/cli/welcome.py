@@ -1,7 +1,8 @@
-"""Welcome banner shown on first run after install."""
+"""Welcome banner shown on first run and after upgrades."""
 
 from __future__ import annotations
 
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 
 from rich.console import Console
@@ -19,26 +20,46 @@ _LOGO = r"""
 """
 
 
-def show_if_first_run() -> None:
-    """Print the welcome banner the first time envsniff is run.
+def _installed_version() -> str:
+    try:
+        return pkg_version("envsniff")
+    except Exception:
+        return "unknown"
 
-    Writes a marker file to ~/.config/envsniff/.welcomed so the banner
-    is shown exactly once per machine.
+
+def _marker_version() -> str:
+    try:
+        return _MARKER.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def _write_marker(ver: str) -> None:
+    try:
+        _MARKER.parent.mkdir(parents=True, exist_ok=True)
+        _MARKER.write_text(ver, encoding="utf-8")
+    except OSError:
+        pass  # read-only fs or permissions issue — silently skip
+
+
+def show_if_first_run() -> None:
+    """Print the welcome banner on first install or after an upgrade.
+
+    Stores the installed version in ~/.config/envsniff/.welcomed.
+    Banner is shown whenever the stored version differs from the
+    currently installed version (covers fresh installs and upgrades).
     """
-    if _MARKER.exists():
+    current = _installed_version()
+    if _marker_version() == current:
         return
 
     console = Console(stderr=True)
     console.print(Text(_LOGO, style="bold green"))
     console.print(
-        "[bold white]Welcome to envsniff![/bold white] "
+        f"[bold white]Welcome to envsniff {current}![/bold white] "
         "Scan your codebase for environment variables and keep "
         "[cyan].env.example[/cyan] in sync.\n",
         highlight=False,
     )
 
-    try:
-        _MARKER.parent.mkdir(parents=True, exist_ok=True)
-        _MARKER.touch()
-    except OSError:
-        pass  # read-only fs or permissions issue — silently skip
+    _write_marker(current)

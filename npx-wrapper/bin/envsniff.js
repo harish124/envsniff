@@ -20,9 +20,27 @@ const path = require("path");
 const args = process.argv.slice(2);
 
 const MARKER = path.join(os.homedir(), ".config", "envsniff", ".welcomed");
+const PKG_VERSION = require("../package.json").version;
+
+function markerVersion() {
+  try {
+    return fs.readFileSync(MARKER, "utf8").trim();
+  } catch (_) {
+    return "";
+  }
+}
+
+function writeMarker(ver) {
+  try {
+    fs.mkdirSync(path.dirname(MARKER), { recursive: true });
+    fs.writeFileSync(MARKER, ver, "utf8");
+  } catch (_) {
+    // read-only fs or permissions issue — silently skip
+  }
+}
 
 function showWelcomeIfFirstRun() {
-  if (fs.existsSync(MARKER)) return;
+  if (markerVersion() === PKG_VERSION) return;
 
   const logo = [
     "",
@@ -31,20 +49,14 @@ function showWelcomeIfFirstRun() {
     "█████╗  ██╔██╗ ██║██║   ██║███████╗██╔██╗ ██║██║█████╗  █████╗      ███████║██║",
     "██╔══╝  ██║╚██╗██║╚██╗ ██╔╝╚════██║██║╚██╗██║██║██╔══╝  ██╔══╝      ██╔══██║██║",
     "███████╗██║ ╚████║ ╚████╔╝ ███████║██║ ╚████║██║██║     ██║         ██║  ██║██║",
-    "╚══════╝╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝         ╚═╝  ╚═╝╚═╝\x1b[0m",
+    `╚══════╝╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝         ╚═╝  ╚═╝╚═╝\x1b[0m`,
     "",
-    "\x1b[1mWelcome to envsniff!\x1b[0m Scan your codebase for environment variables and keep \x1b[36m.env.example\x1b[0m in sync.",
+    `\x1b[1mWelcome to envsniff ${PKG_VERSION}!\x1b[0m Scan your codebase for environment variables and keep \x1b[36m.env.example\x1b[0m in sync.`,
     "",
   ].join("\n");
 
   process.stderr.write(logo + "\n");
-
-  try {
-    fs.mkdirSync(path.dirname(MARKER), { recursive: true });
-    fs.writeFileSync(MARKER, "");
-  } catch (_) {
-    // read-only fs or permissions issue — silently skip
-  }
+  writeMarker(PKG_VERSION);
 }
 
 showWelcomeIfFirstRun();
