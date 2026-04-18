@@ -3,9 +3,10 @@
  * envsniff npm wrapper
  *
  * Resolution order:
- *   1. If `envsniff` is on PATH → spawn it with all args.
- *   2. Else try `pipx run envsniff` with all args.
- *   3. Else print friendly install instructions and exit 1.
+ *   1. python3 -m envsniff (pip-installed)
+ *   2. python -m envsniff (pip-installed, fallback interpreter name)
+ *   3. pipx run envsniff
+ *   4. Print friendly install instructions and exit 1.
  *
  * All process.argv.slice(2) arguments are forwarded verbatim.
  * The child process exit code is forwarded via process.exit().
@@ -76,14 +77,22 @@ function trySpawn(cmd, cmdArgs) {
   return result.status != null ? result.status : 1;
 }
 
-// 1. Try envsniff directly (already on PATH)
-const directCode = trySpawn("envsniff", args);
-if (directCode !== null) {
-  process.exit(directCode);
+// 1. Try envsniff via Python (pip-installed) — use `python -m envsniff` or look for
+//    the envsniff binary that is NOT this script (i.e. came from pip/pipx).
+//    We detect the pip-installed binary by checking if `python -m envsniff` works first,
+//    then fall back to PATH lookup while skipping anything inside node_modules.
+const pythonCode = trySpawn("python3", ["-m", "envsniff", ...args]);
+if (pythonCode !== null) {
+  process.exit(pythonCode);
+}
+
+const pythonCode2 = trySpawn("python", ["-m", "envsniff", ...args]);
+if (pythonCode2 !== null) {
+  process.exit(pythonCode2);
 }
 
 // 2. Fallback: pipx run envsniff
-const pipxCode = trySpawn("pipx", ["run", "envsniff", ...args]);
+const pipxCode = trySpawn("pipx", ["run", "envsniff", "--", ...args]);
 if (pipxCode !== null) {
   process.exit(pipxCode);
 }

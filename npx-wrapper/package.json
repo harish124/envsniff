@@ -1,8 +1,19 @@
 {
   "name": "envsniff",
   "version": "0.1.0",
-  "description": "Scan codebases for environment variables",
+  "description": "Scan codebases for environment variables and generate .env.example files",
   "bin": { "envsniff": "./bin/envsniff.js" },
   "files": ["bin/"],
-  "engines": { "node": ">=16" }
+  "engines": { "node": ">=16" },
+  "keywords": ["environment", "dotenv", "cli", "scanner", "devtools", "env-vars"],
+  "author": "envsniff contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harish124/envsniff.git"
+  },
+  "homepage": "https://github.com/harish124/envsniff#readme",
+  "bugs": {
+    "url": "https://github.com/harish124/envsniff/issues"
+  }
 }
