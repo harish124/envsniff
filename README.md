@@ -196,21 +196,35 @@ envsniff generate . --ai --ai-provider openai --ai-model gpt-4o   # non-interact
 Example `.env.example` output:
 
 ```bash
-# PostgreSQL connection string
-# Example: postgresql://user:pass@localhost:5432/mydb
+# Added by envsniff
+#
+# Description: PostgreSQL/MySQL connection string
+# Example:     postgres://user:pass@localhost/dbname
+#
 DATABASE_URL=
 
-# API authentication key
+# Added by envsniff
+#
+# Description: Api API key
+#
 API_KEY=
 
-# Enable debug mode
-# Example: false
+# Added by envsniff
+#
+# Description: Enable debug mode (true/false)
+# Example:     false
+#
 DEBUG=false
 
-# Server port
-# Example: 8080
+# Added by envsniff
+#
+# Description: Port number the server listens on
+# Example:     8080
+#
 PORT=8080
 ```
+
+Heuristic descriptions are always generated — no `--ai` flag needed. The `# Example:` line is omitted when no example value is known.
 
 ### check
 
@@ -238,7 +252,7 @@ envsniff check . --strict         # fail on any issue
 | Python                  | `os.getenv("X")`, `os.environ.get("X")`, `os.environ["X"]` |
 | JavaScript / TypeScript | `process.env.X`, `process.env["X"]`                        |
 | Go                      | `os.Getenv("X")`, `os.LookupEnv("X")`                      |
-| Shell                   | `$VAR`, `${VAR}` (skips `$$`, `$?`, `$1`–`$9`)             |
+| Shell                   | `$VAR`, `${VAR}` — skips local variables (`VAR=value` without `export`), shell specials (`$$`, `$?`, `$1`–`$9`) |
 | Dockerfile              | `ENV VAR=value`, `ARG VAR=default`                         |
 
 ---
