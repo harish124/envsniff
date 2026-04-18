@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from envsniff.scanner.plugins.base import LanguageScanner
 from envsniff.scanner.plugins.docker import DockerPlugin
 from envsniff.scanner.plugins.golang import GoPlugin
 from envsniff.scanner.plugins.javascript import JavaScriptPlugin
@@ -13,6 +12,8 @@ from envsniff.scanner.plugins.shell import ShellPlugin
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from envsniff.scanner.plugins.base import LanguageScanner
 
 
 class PluginRegistry:
