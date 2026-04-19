@@ -69,3 +69,4 @@ assets/*.mp4
 # Personal tooling (not project code)
 .claude/plan/
 .repowise/
+socmed/
